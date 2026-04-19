@@ -89,4 +89,25 @@ class UserService extends BaseService
             'token_type' => 'Bearer'
         ];
     }
+
+    public function verifyAndLogin($id, $hash): array
+    {
+        $user = $this->repository->findById($id);
+
+        if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
+            throw new HttpException(403, 'Link xác thực không hợp lệ hoặc đã hết hạn.');
+        }
+
+        if (!$user->hasVerifiedEmail()) {
+            $user->markEmailAsVerified();
+        }
+
+        $token = $user->createToken('auth_token')->plainTextToken;
+
+        return [
+            'user' => $user,
+            'access_token' => $token,
+            'token_type' => 'Bearer'
+        ];
+    }
 }

@@ -18,21 +18,10 @@ Route::get('/email/verify', function () {
 })->name('verification.notice');
 
 
-Route::get('/email/verify/{id}/{hash}', function (Request $request, $id, $hash) {
-    $user = User::findOrFail($id);
-
-    if (!hash_equals((string) $hash, sha1($user->getEmailForVerification()))) {
-        return response()->json(['message' => 'Link xác thực không hợp lệ.'], 403);
-    }
-
-    if ($user->hasVerifiedEmail()) {
-        return response()->json(['message' => 'Email này đã được xác thực từ trước.']);
-    }
-
-    $user->markEmailAsVerified();
-
-    return response()->json(['message' => 'Xác thực email thành công!']);
-})->name('verification.verify');
+// xác thực email
+Route::get('/email/verify/{id}/{hash}', [AuthController::class, 'verify'])
+    ->middleware(['signed'])
+    ->name('verification.verify');
 
 // gửi lại email xác thực
 Route::post('/email/resend', [AuthController::class, 'resendVerificationEmail']);

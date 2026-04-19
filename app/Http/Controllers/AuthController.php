@@ -125,4 +125,24 @@ class AuthController extends Controller
             'code' => 200
         ], 200);
     }
+
+    public function verify(Request $request, $id, $hash): JsonResponse
+    {
+        try {
+            $result = $this->userService->verifyAndLogin($id, $hash);
+
+            return response()->json([
+                'message' => 'Xác thực email thành công và đã đăng nhập!',
+                'access_token' => $result['access_token'],
+                'token_type' => $result['token_type'],
+                'user' => $result['user'],
+                'code' => 200
+            ], 200);
+
+        } catch (Exception $e) {
+            return response()->json([
+                'message' => $e->getMessage()
+            ], $e instanceof HttpException ? $e->getStatusCode() : 500);
+        }
+    }
 }
