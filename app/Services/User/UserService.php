@@ -10,6 +10,10 @@ use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
+
+/**
+ * @property UserRepositoryInterface $repository
+ */
 class UserService extends BaseService
 {
     public function __construct(UserRepositoryInterface $userRepository)

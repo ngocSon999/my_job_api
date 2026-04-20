@@ -14,15 +14,14 @@ return new class extends Migration
         Schema::create('interactions', function (Blueprint $table) {
             $table->id();
 
+            $table->foreignId('post_id')->constrained('posts')->onDelete('cascade');
+
             // ID của người tìm việc được chọn (Bạn A)
             $table->foreignId('candidate_id')->constrained('users')->onDelete('cascade');
 
             // ID của nhà tuyển dụng nếu họ có đăng nhập
-            $table->foreignId('employer_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->foreignId('employer_id')->constrained('users')->onDelete('cascade');
 
-
-            $table->string('guest_name')->nullable();
-            $table->string('guest_contact')->nullable();
 
             // Nội dung lời mời hoặc mô tả công việc muốn thuê
             $table->text('message')->nullable();

@@ -18,6 +18,8 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            $table->integer('credit_score')->default(100)->index();
+
             $table->rememberToken();
             $table->timestamps();
         });

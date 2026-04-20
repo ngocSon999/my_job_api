@@ -2,26 +2,32 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\InteractionResource;
 use App\Models\Interaction;
+use App\Services\Interaction\InteractionService;
+use Exception;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class InteractionController extends Controller
 {
+    protected InteractionService $interactionService;
+
+    public function __construct(InteractionService $interactionService)
+    {
+        $this->interactionService = $interactionService;
+    }
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    // InteractionController.php
+    public function index(Request $request): JsonResponse
     {
-        //
-    }
+        $data = $this->interactionService->getMyNotifications($request);
 
-    /**
-     * Show the form for creating a new resource.
-     */
-    public function create()
-    {
-        //
+        return response()->json(
+            InteractionResource::collection($data)->response()->getData(true)
+        );
     }
 
     /**
@@ -29,45 +35,57 @@ class InteractionController extends Controller
      */
     public function store(Request $request): JsonResponse
     {
-        $interaction = Interaction::create([
-            'candidate_id' => $request->candidate_id,
-            'employer_id' => auth('sanctum')->id(),
-            'guest_name' => $request->guest_name,
-            'guest_contact' => $request->guest_contact,
-            'message' => $request->message,
-        ]);
+        try {
+            $data = $request->only([
+                'post_id',
+                'message',
+            ]);
 
-        // TODO: Gửi Push Notification đến A qua Firebase
+            $interaction = $this->interactionService->createInteraction($data);
 
-
-        return response()->json([
-            'message' => 'Yêu cầu kết nối đã được gửi thành công!',
-            'data' => $interaction
-        ], 201);
+            return response()->json([
+                'status'  => 'success',
+                'message' => 'Yêu cầu kết nối đã được gửi thành công!',
+                'data'    => $interaction
+            ], 201);
+        } catch (Exception $e) {
+            return response()->json([
+                'status'  => 'error',
+                'message' => $e->getMessage()
+            ], 400);
+        }
     }
 
     /**
      * Display the specified resource.
      */
-    public function show(Interaction $interaction)
+    public function show($id): InteractionResource
     {
-        //
-    }
+        $interaction = $this->interactionService->find($id);
 
-    /**
-     * Show the form for editing the specified resource.
-     */
-    public function edit(Interaction $interaction)
-    {
-        //
+        return new InteractionResource($interaction);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Interaction $interaction)
+    public function update(Request $request, $id): JsonResponse
     {
-        //
+        try {
+            // status 'accepted' hoặc 'rejected'
+            $status = $request->input('status');
+            $interaction = $this->interactionService->respondInteraction($id, $status);
+
+            $msg = $status === 'accepted' ? 'Bạn đã đồng ý kết nối!' : 'Bạn đã từ chối yêu cầu.';
+
+            return response()->json([
+                'status' => 'success',
+                'message' => $msg,
+                'data' => new InteractionResource($interaction)
+            ]);
+        } catch (Exception $e) {
+            return response()->json(['message' => $e->getMessage()], 400);
+        }
     }
 
     /**

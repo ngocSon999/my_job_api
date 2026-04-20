@@ -9,15 +9,19 @@ class Interaction extends Model
 {
     protected $table = 'interactions';
     protected $fillable = [
+        'post_id',
         'candidate_id',
         'employer_id',
-        'guest_name',
-        'guest_contact',
         'message',
         'status'
     ];
 
-    // Lấy thông tin người tìm việc (Bạn A)
+    public function post(): BelongsTo
+    {
+        return $this->belongsTo(Post::class, 'post_id');
+    }
+
+    // Lấy thông tin người tìm việc
     public function candidate(): BelongsTo
     {
         return $this->belongsTo(User::class, 'candidate_id');
