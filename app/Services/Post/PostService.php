@@ -5,6 +5,7 @@ namespace App\Services\Post;
 use App\Repositories\Post\PostRepositoryInterface;
 use App\Services\BaseService;
 use Exception;
+use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -28,10 +29,7 @@ class PostService extends BaseService
         try {
             $user = Auth::user();
             $data['user_id'] = $user->id;
-
-            $data['contact_name']  = $data['contact_name']  ?? $user->name;
-            $data['contact_phone'] = $data['contact_phone'] ?? $user->phone;
-            $data['contact_email'] = $data['contact_email'] ?? $user->email;
+            $data = $this->fillDefaultInformation($data, $user);
 
             $post = $this->repository->create($data);
 
@@ -51,23 +49,14 @@ class PostService extends BaseService
     {
         $post = $this->repository->findById($id);
 
-        if ($post->user_id !== Auth::id()) {
+        if (!$post || $post->user_id !== Auth::id()) {
             throw new Exception("Bạn không có quyền chỉnh sửa bài viết này.", 403);
         }
 
         DB::beginTransaction();
         try {
             $user = Auth::user();
-
-            if (array_key_exists('contact_name', $data)) {
-                $data['contact_name'] = $data['contact_name'] ?: $user->name;
-            }
-            if (array_key_exists('contact_phone', $data)) {
-                $data['contact_phone'] = $data['contact_phone'] ?: $user->phone;
-            }
-            if (array_key_exists('contact_email', $data)) {
-                $data['contact_email'] = $data['contact_email'] ?: $user->email;
-            }
+            $data = $this->fillDefaultInformation($data, $user);
 
             $updatedPost = $this->repository->update($id, $data);
 
@@ -84,5 +73,36 @@ class PostService extends BaseService
     public function getActivePosts(array $data)
     {
         return $this->repository->getActivePosts($data);
+    }
+
+    public function getMyPosts(array $data)
+    {
+        return $this->repository->getMyPosts($data);
+    }
+
+    /**
+     * @param array $data
+     * @param Authenticatable|null $user
+     * @return array
+     */
+    public function fillDefaultInformation(array $data, ?Authenticatable $user): array
+    {
+        $contactFields = [
+            'contact_name'  => 'name',
+            'contact_phone' => 'phone',
+            'contact_email' => 'email'
+        ];
+        foreach ($contactFields as $field => $userField) {
+            if (array_key_exists($field, $data)) {
+                $data[$field] = $data[$field] ?: ($user?->$userField);
+            }
+        }
+
+        if (isset($data['is_negotiable']) && filter_var($data['is_negotiable'], FILTER_VALIDATE_BOOLEAN)) {
+            $data['salary_min'] = 0;
+            $data['salary_max'] = 0;
+        }
+
+        return $data;
     }
 }

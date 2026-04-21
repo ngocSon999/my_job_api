@@ -48,6 +48,7 @@ Route::middleware(['auth:sanctum', 'verified'])->group(function () {
 
     // Quản lý bài đăng (Posts)
     Route::prefix('posts')->group(function () {
+        Route::get('/my-posts', [PostController::class, 'myPosts']);
         Route::get('/', [PostController::class, 'index']);
         Route::get('/{id}', [PostController::class, 'show']);
         Route::post('/', [PostController::class, 'store']);

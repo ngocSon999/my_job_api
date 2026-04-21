@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\PostResource;
 use App\Services\Post\PostService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class PostController extends Controller
 {
@@ -22,6 +24,15 @@ class PostController extends Controller
         return response()->json($this->postService->getActivePosts($request->all()));
     }
 
+    public function myPosts(Request $request): JsonResponse
+    {
+        $data = $this->postService->getMyPosts($request->all());
+
+        return response()->json(
+            PostResource::collection($data)->response()->getData(true)
+        );
+    }
+
     /**
      * Store a newly created resource in storage.
      * @throws \Exception
@@ -36,9 +47,18 @@ class PostController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id): JsonResponse
+    public function show($id): PostResource
     {
-        return response()->json($this->postService->find($id));
+        $post = $this->postService->find($id);
+
+        $cacheKey = 'post_viewed_' . $id . '_' . request()->ip();
+
+        if (!Cache::has($cacheKey)) {
+            $post->increment('views');
+            Cache::forever($cacheKey, true);
+        }
+
+        return new PostResource($post);
     }
 
     /**
